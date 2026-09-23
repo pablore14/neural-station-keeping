@@ -4,9 +4,9 @@ import pickle
 import time
 from tqdm import tqdm
 
-from src.nsk.optimizers import  integrator3D_casadi
-from src.nsk.optimizers.optimizersv2 import optimize_safeorbit2
-from src.nsk.propagators import (integrate3D_dV, make_ellipsoid_event, make_rmax_event)
+from src.optimizers import  integrator3D_casadi
+from src.optimizers.optimizersv2 import optimize_safeorbit2
+from src.propagators import (integrate3D_dV, make_ellipsoid_event, make_rmax_event)
 from src.utils import oe2cartesian
 
 
