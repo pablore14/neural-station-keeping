@@ -115,7 +115,7 @@ def build_batch(n_episodes=N_EPISODES, master_seed=MASTER_SEED):
 def episode_asteroid_dict(batch, i):
     """Rebuild the asteroid_dict of episode i from the stored batch."""
     return {
-        "axes": ASTEROID_AXES,
+        "axes": ASTEROID_AXES_M,
         "omega": ASTEROID_OMEGA,
         "mascon": {"muM": batch["muM"][i], "xyzM": batch["xyzM"][i]},
         "xyzM": batch["xyzM"][i],
