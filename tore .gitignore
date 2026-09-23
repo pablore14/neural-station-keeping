@@ -1,0 +1,21 @@
+[1mdiff --git a/.gitignore b/.gitignore[m
+[1mindex cc37b92..aa6d573 100644[m
+[1m--- a/.gitignore[m
+[1m+++ b/.gitignore[m
+[36m@@ -14,10 +14,14 @@[m [mruns/*[m
+ *.pt[m
+ *.pkl[m
+ *.zip[m
+[31m-[m
+[32m+[m[32m*.txt[m
+ paper/*.aux[m
+ paper/*.log[m
+ paper/*.out[m
+ paper/*.synctex.gz[m
+ paper/*.bbl[m
+ paper/*.blg[m
+[32m+[m
+[32m+[m[32m__pycache__/[m
+[32m+[m[32m*.pyc[m
+[32m+[m[32mlog_simulacion.txt[m
+\ No newline at end of file[m
