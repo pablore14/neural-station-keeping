@@ -98,7 +98,7 @@ def run_episode(i, asteroid_dict, data_dict, optim_dict):
 # -------------------------------
 if __name__ == "__main__":
     # Load results
-    with open("/data/test_data_local_same_velocity.pkl", "rb") as f:  # "rb" = read binary
+    with open("data/test_data_local_same_velocity.pkl", "rb") as f:  # "rb" = read binary
         data_dict = pickle.load(f)
 
     # Number of simulations
