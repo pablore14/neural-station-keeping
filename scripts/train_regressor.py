@@ -29,6 +29,7 @@ from src.regressor.data_preparation.state_scaling import adimensionalize_state
 from src.utils.tracking import get_git_commit, make_run_dir
 from src.regressor.plot_train_regressor import (compute_split_metrics, format_summary,
                                     infer_traj_ids, threshold_sweep, MAIN_MODE)
+from src.regressor.data_preparation.configuration_split import load_split,build_split
 
 
 def parse_args():
@@ -58,36 +59,7 @@ def set_seed(seed):
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
-def load_split(data_path, seed):
-    """Load the pickle and split trajectories into train / val / test (70/15/15)."""
-    with open(data_path, "rb") as f:
-        ocp = pickle.load(f)
-    results = ocp["results_dict"]
 
-    rng = random.Random(seed)      # local RNG, does not touch the global state
-    rng.shuffle(results)
-
-    n = len(results)
-    train = results[:int(0.70 * n)]
-    val   = results[int(0.70 * n):int(0.85 * n)]
-    test  = results[int(0.85 * n):]
-    print(f"[data] total={n}  train={len(train)}  val={len(val)}  test={len(test)}")
-    return train, val, test
-
-
-def build_split(results):
-    """Turn a list of trajectories into a dict with everything needed downstream."""
-    states, dv, steps = process_results(results)
-    features = adimensionalize_state(states, steps)
-    dv = np.asarray(dv, dtype=np.float32)
-    return {
-        "x":       np.asarray(features, dtype=np.float32),
-        "states":  np.asarray(states),                 # dimensional, original dtype
-        "steps":   np.asarray(steps),
-        "traj_id": infer_traj_ids(steps),
-        "dv_true": dv,
-        "labels":  (np.abs(dv) > DELTA).astype(np.float32),
-    }
 
 
 @torch.no_grad()
@@ -204,7 +176,7 @@ def main():
     print(f"[done] run data: {pkl_path}")
 
     if args.plot:
-        from scripts.plot_regressor import make_all_plots
+        from src.regressor.plot_train_regressor import make_all_plots
         make_all_plots(run_data, os.path.join(out_dir, "plots"))
 
 
