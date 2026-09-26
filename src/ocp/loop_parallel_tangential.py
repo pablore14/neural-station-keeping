@@ -148,5 +148,5 @@ if __name__ == "__main__":
                    'results_dict': results}
 
     # Save to pickle file
-    with open("/results/direct_results_VNBTangential_v2.pkl", "wb") as f:
+    with open("results/direct_results_VNBTangential_v2.pkl", "wb") as f:
         pickle.dump(output_dict, f)
