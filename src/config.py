@@ -23,8 +23,8 @@ import numpy as np
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DATA_DIR    = os.path.join(PROJECT_ROOT, "data")
-RESULTS_DIR_REG = os.path.join(PROJECT_ROOT, "results/REGRESSOR")
-RESULTS_DIR_RL = os.path.join(PROJECT_ROOT, "results/RL")
+RESULTS_DIR_REG = os.path.join(PROJECT_ROOT, "results/regressor")
+RESULTS_DIR_RL = os.path.join(PROJECT_ROOT, "results/rl")
 
 
 # ══════════════════════════════════════════════════════════════════════════

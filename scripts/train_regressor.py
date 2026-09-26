@@ -22,7 +22,7 @@ import numpy as np
 import torch
 
 from src.config import RESULTS_DIR_REG, DELTA, DV_MAX_REG
-from src.regressor import PolicyNet
+from src.regressor.PolicyNet import PolicyNet 
 from src.regressor.trainer import Trainer
 from src.regressor.data_preparation.dataset_preparation import JointDataset, process_results
 from src.regressor.data_preparation.state_scaling import adimensionalize_state
