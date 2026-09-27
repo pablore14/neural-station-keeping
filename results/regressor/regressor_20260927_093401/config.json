@@ -1,6 +1,6 @@
 {
-  "git_commit": "fe2824b1f7d8b5903bfa340fd0c26a8bc5a84df0-dirty",
-  "seed": 42,
+  "git_commit": "870027b6573054954e0bf966d2b0ef7f82c00313-dirty",
+  "seed": 45,
   "state_dim": 8,
   "hidden_dim": 256,
   "epochs": 10000,
