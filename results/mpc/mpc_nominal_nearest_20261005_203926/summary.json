@@ -1,0 +1,118 @@
+{
+  "meta": {
+    "schema_version": 2,
+    "script": "mpc",
+    "git_commit": "a6e81b5cbfe7d0b7c02ee31cd008c58dbce05e43-dirty",
+    "started": "2026-10-05T20:39:26.942068",
+    "finished": "2026-10-07T21:42:12.551039",
+    "elapsed_s": 176565.6089873314,
+    "host": "lambert",
+    "python": "3.9.25",
+    "numpy": "2.0.2",
+    "argv": [
+      "/home/pabredama/neural-station-keeping/scripts/mpc.py",
+      "--scenarios",
+      "data/initial_conditions_500.pkl",
+      "--ep-start",
+      "0",
+      "--n-episodes",
+      "500",
+      "--model",
+      "nominal",
+      "--guess",
+      "nearest",
+      "--guess-library",
+      "results/direct_results_VNBTangential_v2.pkl",
+      "--out-dir",
+      "results/mpc/mpc_nominal_nearest_20261005_203926"
+    ],
+    "resumed": false
+  },
+  "config": {
+    "args": {
+      "scenarios": "data/initial_conditions_500.pkl",
+      "ep_start": 0,
+      "n_episodes": 500,
+      "noise_seed": 123,
+      "model": "nominal",
+      "guess": "nearest",
+      "guess_library": "results/direct_results_VNBTangential_v2.pkl",
+      "library_max_fail": 0.0,
+      "ref_results": null,
+      "ref_mode": null,
+      "out_dir": "results/mpc/mpc_nominal_nearest_20261005_203926",
+      "out_root": "results/mpc",
+      "resume": false,
+      "no_plans": false,
+      "no_warmup": false,
+      "verbose_steps": 5
+    },
+    "constants": {
+      "DT_STEP": 600.0,
+      "SHELL_MIN": 22000.0,
+      "SHELL_MAX": 30000.0,
+      "DVMAX_MPC": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "MAX_ITER_FINAL": 250,
+      "MAX_ITER_HOMOT": 80,
+      "HOMOTOPY_MARGIN": 0.8,
+      "RES_ACTION_DEADBAND": 1e-08,
+      "NOISE_SEED_STRIDE": 1000000
+    },
+    "simulation": {
+      "dt_s": 600.0,
+      "sigma_dv_abs": 0.00125,
+      "sigma_theta": 0.05235987755982989,
+      "dv_off_threshold": 1e-08,
+      "rmax": 50000.0,
+      "ellip_axes": [
+        16000.0,
+        8000.0,
+        5000.0
+      ]
+    },
+    "nominal_check": {
+      "mu_total_rel_diff": 0.0,
+      "xyz_max_diff_m": 0.0,
+      "ok": true
+    },
+    "library": {
+      "path": "results/direct_results_VNBTangential_v2.pkl",
+      "n_entries": 1313
+    },
+    "reference": null
+  },
+  "scenarios": {
+    "path": "data/initial_conditions_500.pkl",
+    "master_seed": 1,
+    "n_saved": 500,
+    "n_batch": 500
+  },
+  "summary": {
+    "success": 500,
+    "partial": 0,
+    "collision": 0,
+    "escape": 0,
+    "n_episodes": 500,
+    "success_rate": 1.0,
+    "mean_dv_total": 0.3083107060179849,
+    "mean_dv_exec": 0.33621985361030843,
+    "mean_dv_base": 0.0,
+    "mean_dv_res": 0.3083107060179849,
+    "mean_dv_success": 0.3083107060179849,
+    "mean_acts_total": 31.192,
+    "mean_acts_res": 31.192,
+    "mean_ctrl_time": 5.883025084074385,
+    "max_ctrl_time": 26.154937751125544,
+    "solver_fail_steps": 0,
+    "homotopy_steps": 0,
+    "guess_infeasible": 0,
+    "reused_plan_steps": 0,
+    "zero_action_steps": 0,
+    "total_steps": 30000,
+    "ref_to_mpc_outcome": {}
+  }
+}

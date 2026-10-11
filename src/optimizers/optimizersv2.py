@@ -177,7 +177,7 @@ def optimize_safeorbit2(initguess_dict,
     solver = ca.nlpsol('solver', 'ipopt', prob,
                        {'ipopt.print_level': 5,
                         'print_time': True,
-                        'ipopt.max_iter': 250})
+                        'ipopt.max_iter': optim_dict.get('max_iter', 250)})
 
     # Solve
     sol = solver(x0=ca.vertcat(*w0),
