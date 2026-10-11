@@ -14,6 +14,7 @@ runs/*
 *.pt
 *.pkl
 *.zip
+*.txt
 
 paper/*.aux
 paper/*.log
