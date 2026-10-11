@@ -1,0 +1,12 @@
+{
+  "git_commit": "fe2824b1f7d8b5903bfa340fd0c26a8bc5a84df0-dirty",
+  "seed": 42,
+  "state_dim": 8,
+  "hidden_dim": 256,
+  "epochs": 10000,
+  "lambda_reg": 200.0,
+  "dv_max": 0.2,
+  "delta": 1e-08,
+  "loss": "BCEWithLogitsLoss + lambda_reg * SmoothL1Loss",
+  "data_path": "results/direct_results_VNBTangential_v2.pkl"
+}
