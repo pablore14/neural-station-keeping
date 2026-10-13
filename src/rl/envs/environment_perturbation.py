@@ -8,16 +8,30 @@ import torch
 from gymnasium import spaces
 
 from src.config import (
+    COLLISION_REWARD,
     DISPERSION_M,
     MASS_VARIATION,
+    OUT_OF_SHELL_REWARD,
     R_REF,
+    RMAX_M,
     V_REF,
 )
+from src.propagators.events import make_ellipsoid_event, make_rmax_event
 from src.propagators.integrator_scipy import integrate3D_scipy
 from src.regressor.data_preparation.state_scaling import adimensionalize_state
 from src.utils.rollout import DV_OFF_THRESHOLD, execute_impulse
 
 SPHERE_RADIUS_M = DISPERSION_M
+
+
+def _make_inner_shell_event(radius):
+    """Stop propagation on the first inward crossing of the shell boundary."""
+    def event(_, state):
+        return np.linalg.norm(state[:3]) - radius
+
+    event.terminal = True
+    event.direction = -1
+    return event
 
 
 def _shell_penalty(radius, inner, outer, slope=1.0, sharpness=5.0):
@@ -137,17 +151,45 @@ class OrbitEnv(gymnasium.Env):
         dv_ad = dv_planet / v_ad
         xk[3:6] += dv_ad
 
-        _, states, _, _, _ = integrate3D_scipy(
-            xk, dt, self.asteroid_dict, c=self.optim_dict["c"], N=1
+        ellipsoid_axes_ad = self.optim_dict["ellip_axes"] / r_ad
+        inner_shell_ad = self.optim_dict["shell"]["bounds"][0] / r_ad
+        outer_shell_ad = self.optim_dict["shell"]["bounds"][1] / r_ad
+        events = [
+            make_ellipsoid_event(ellipsoid_axes_ad),
+            make_rmax_event(self.optim_dict.get("rmax", RMAX_M) / r_ad),
+            _make_inner_shell_event(inner_shell_ad),
+            make_rmax_event(outer_shell_ad),
+        ]
+        _, states, event_flags, _, event_state = integrate3D_scipy(
+            xk,
+            dt,
+            self.asteroid_dict,
+            c=self.optim_dict["c"],
+            N=1,
+            events=events,
         )
         self.k += 1
-        self.x[:6] = states[1]
+        if event_state is not None:
+            self.x[:6] = event_state
+        else:
+            self.x[:6] = states[-1]
         self.x[6] += np.linalg.norm(dv_ad) / n_steps
         self.total_dv_m_s += float(np.linalg.norm(dv_ad) * v_ad)
 
-        started = time.perf_counter()
-        self.x[7] = self._base_dv(self.x[:6])
-        info = {"ctrl_dt_base": time.perf_counter() - started}
+        collision = bool(event_flags[0]) if event_flags else self._check_collision()
+        escape = bool(event_flags[1]) if event_flags else self._check_escape()
+        out_of_shell = bool(event_flags[2] or event_flags[3]) if event_flags else False
+        if event_state is None:
+            out_of_shell = out_of_shell or self._is_out_of_shell(self.x[:3], r_ad)
+
+        if out_of_shell or collision or escape:
+            self.x[7] = 0.0
+            ctrl_dt_base = 0.0
+        else:
+            started = time.perf_counter()
+            self.x[7] = self._base_dv(self.x[:6])
+            ctrl_dt_base = time.perf_counter() - started
+        info = {"ctrl_dt_base": ctrl_dt_base}
 
         radius = np.linalg.norm(self.x[:3])
         shell = self.optim_dict["shell"]
@@ -159,16 +201,26 @@ class OrbitEnv(gymnasium.Env):
         reward_shell *= shell["gam"] / n_steps
         reward_delta_v = -np.linalg.norm(dv_ad) / n_steps
 
-        terminated = bool(self._check_collision() or self._check_escape())
+        terminated = bool(out_of_shell or collision or escape)
         reward_terminal = 0.0
+        termination_reason = None
+        if out_of_shell:
+            reward_terminal = self.optim_dict.get("G", OUT_OF_SHELL_REWARD)
+            termination_reason = "out_of_shell"
+        elif collision:
+            reward_terminal = self.optim_dict.get("H", COLLISION_REWARD)
+            termination_reason = "collision"
+        elif escape:
+            reward_terminal = self.optim_dict.get("H", COLLISION_REWARD)
+            termination_reason = "escape"
+
         if terminated:
-            reward_terminal = self.optim_dict["H"]
             reward_shell = 0.0
             reward_delta_v = 0.0
 
         reward = reward_shell + reward_delta_v + reward_terminal
 
-        truncated = self.k >= n_steps
+        truncated = self.k >= n_steps and not terminated
         info.update({
             "ctrl_dt_base": info["ctrl_dt_base"],
             "dv_base_m_s": dv_base_m_s,
@@ -196,6 +248,8 @@ class OrbitEnv(gymnasium.Env):
             "reward_shell": float(reward_shell),
             "reward_delta_v": float(reward_delta_v),
             "reward_terminal": float(reward_terminal),
+            "out_of_shell": out_of_shell,
+            "termination_reason": termination_reason or "",
             "terminated": terminated,
             "truncated": truncated,
         })
@@ -213,6 +267,11 @@ class OrbitEnv(gymnasium.Env):
     def _check_escape(self):
         r_ad = self.optim_dict["c"][1]
         return np.linalg.norm(self.x[:3]) > self.optim_dict["rmax"] / r_ad
+
+    def _is_out_of_shell(self, state_ad, r_ad):
+        radius_m = np.linalg.norm(state_ad) * r_ad
+        inner, outer = self.optim_dict["shell"]["bounds"]
+        return radius_m < inner or radius_m > outer
 
     def _base_dv(self, state_ad):
         """Predict and gate the base delta-v; return it in environment units."""

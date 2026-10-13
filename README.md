@@ -27,3 +27,5 @@ batch: the first mascon is nominally 60% of total mass with a relative
 variation of +/-25% (a 45%-75% fraction, uniformly sampled per episode).
 Impulse noise and pointing error are disabled for commands with magnitude at
 or below the shared `1e-8 m/s` thruster-off threshold, just as in MPC rollouts.
+During SAC training, crossing either shell boundary (22 km or 30 km) terminates
+the episode at the crossing and gives the configured `-3.0` terminal reward.

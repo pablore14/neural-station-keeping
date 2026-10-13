@@ -32,6 +32,7 @@ from src.config import (
     MASCON_FRACTIONS,
     MASS_VARIATION,
     N_STEPS,
+    OUT_OF_SHELL_REWARD,
     RESULTS_DIR_RL,
     SHELL_GAMMA,
     SHELL_MAX,
@@ -172,6 +173,7 @@ def main():
         "thruster_off_threshold_m_s": DV_OFF_THRESHOLD,
         "shell_bounds_m": [SHELL_MIN, SHELL_MAX],
         "shell_reward_scale": SHELL_GAMMA,
+        "out_of_shell_terminal_reward": OUT_OF_SHELL_REWARD,
         "mass_fraction_1_nominal": float(MASCON_FRACTIONS[0]),
         "mass_fraction_1_range": [
             float(MASCON_FRACTIONS[0] * (1 - MASS_VARIATION)),
