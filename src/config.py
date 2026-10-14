@@ -105,6 +105,7 @@ ASTEROID_AXES_M           = np.array([16, 8, 5]) * KM2M   # ellipsoid semi-axes,
 ASTEROID_ROTATION_PERIOD_S = 5.27 * 3600                   # rotation period, s
 ASTEROID_OMEGA = np.array([0.0, 0.0, 2 * np.pi / ASTEROID_ROTATION_PERIOD_S])
 SHELL_GAMMA    = 0.1        
+DV_REWARD_SCALE = 10.0
  
 # --- Episode / optimization scenario ---
 TF_S            = 10 * 3600     # episode duration, s (10 h)

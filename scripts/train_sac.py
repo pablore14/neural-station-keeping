@@ -28,6 +28,7 @@ from stable_baselines3.common.monitor import Monitor
 from src.config import (
     DISPERSION_M,
     DV_MAX_REG,
+    DV_REWARD_SCALE,
     DVMAX_SAC,
     MASCON_FRACTIONS,
     MASS_VARIATION,
@@ -60,6 +61,10 @@ def parse_args():
     parser.add_argument("--total-timesteps", type=int, default=10_000_000)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--batch-size", type=int, default=256)
+    parser.add_argument(
+        "--output-dir",
+        help="parent directory for output/agent_<seed> (default: timestamped results/rl run)",
+    )
     return parser.parse_args()
 
 
@@ -127,7 +132,13 @@ def main():
     args = parse_args()
     set_seed(args.seed)
 
-    out_dir = make_run_dir(RESULTS_DIR_RL, prefix=f"sac_{args.seed}")
+    if args.output_dir:
+        os.makedirs(args.output_dir, exist_ok=True)
+        out_dir = os.path.join(args.output_dir, f"agent_{args.seed}")
+        os.makedirs(out_dir, exist_ok=False)
+        print(f"[run] {out_dir}", flush=True)
+    else:
+        out_dir = make_run_dir(RESULTS_DIR_RL, prefix=f"sac_{args.seed}")
     checkpoint_dir = os.path.join(out_dir, "checkpoints")
     log_dir = os.path.join(out_dir, "logs")
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -173,6 +184,7 @@ def main():
         "thruster_off_threshold_m_s": DV_OFF_THRESHOLD,
         "shell_bounds_m": [SHELL_MIN, SHELL_MAX],
         "shell_reward_scale": SHELL_GAMMA,
+        "delta_v_reward_scale": DV_REWARD_SCALE,
         "out_of_shell_terminal_reward": OUT_OF_SHELL_REWARD,
         "mass_fraction_1_nominal": float(MASCON_FRACTIONS[0]),
         "mass_fraction_1_range": [

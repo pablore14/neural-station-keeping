@@ -199,7 +199,9 @@ class OrbitEnv(gymnasium.Env):
             shell["bounds"][1] / r_ad,
         )
         reward_shell *= shell["gam"] / n_steps
-        reward_delta_v = -np.linalg.norm(dv_ad) / n_steps
+        reward_delta_v = (
+            -self.optim_dict["dv_reward_scale"] * np.linalg.norm(dv_ad) / n_steps
+        )
 
         terminated = bool(out_of_shell or collision or escape)
         reward_terminal = 0.0
