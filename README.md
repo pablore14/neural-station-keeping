@@ -29,3 +29,49 @@ Impulse noise and pointing error are disabled for commands with magnitude at
 or below the shared `1e-8 m/s` thruster-off threshold, just as in MPC rollouts.
 During SAC training, crossing either shell boundary (22 km or 30 km) terminates
 the episode at the crossing and gives the configured `-3.0` terminal reward.
+
+## SAC evaluation on the shared MPC batch
+
+Evaluate every trained SAC run on the same 500 initial conditions and
+mass-perturbed asteroid scenarios used by the nominal MPC run:
+
+```bash
+python -m scripts.test_sac
+```
+
+The evaluation verifies that all discovered SAC agents use the same trained
+regressor and checks the batch against the MPC results. Each agent gets a
+`tests/` directory containing `run_data.pkl` (all 500 full episode records and
+the input scenario batch), `summary.json`, and PNG/PDF comparisons of outcomes,
+delta-v, and orbit-radius histories against MPC. The MPC-compatible per-episode
+actuation-noise seeds are reused, and the SAC policy is evaluated
+deterministically.
+
+Rebuild the test plots, including controller-computation-time figures, from
+the saved test bundles:
+
+```bash
+python -m src.plots.plot_test_rl
+```
+
+The script discovers every `results/rl/sac_*/tests/run_data.pkl` and saves
+PNG/PDF figures in that test's `tests/` directory. It uses the MPC reference
+path recorded in each bundle for paired comparisons when that file is
+available. To process selected bundles or specify a reference explicitly:
+
+```bash
+python -m src.plots.plot_test_rl \
+  --run-data results/rl/sac_1_<timestamp>/tests/run_data.pkl \
+  --mpc-reference results/mpc/<run>/run_data.pkl
+```
+
+Compare the ten tested SAC seeds on shared test scenarios and save the figures
+under `results/plots_comparison_agents/`:
+
+```bash
+python -m src.plots.plots_SAC_agents
+```
+
+This creates PNG/PDF comparisons of final-radius distributions (including the
+22 km and 30 km shell limits), radius histories, delta-v, outcomes, controller
+latency, evaluation runtime, and action activations, plus an `agent_summary.csv`.

@@ -17,6 +17,8 @@ runs/*
 *.txt
 *.log
 *.pid
+*.pdf
+*.csv
 
 paper/*.aux
 paper/*.log

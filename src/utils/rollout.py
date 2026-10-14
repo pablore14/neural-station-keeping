@@ -140,7 +140,7 @@ def final_outcome(x):
 # Episode
 # ===========================================================================
 def run_episode(policy, x0, asteroid_dict, optim_dict, rng,
-                on_step=None, dv_off=DV_OFF_THRESHOLD):
+                on_step=None, dv_off=DV_OFF_THRESHOLD, on_transition=None):
     """Run one episode of at most optim_dict['N'] control steps.
 
     Args:
@@ -150,6 +150,8 @@ def run_episode(policy, x0, asteroid_dict, optim_dict, rng,
         optim_dict:    scenario settings (c, N, tf, ellip_axes, rmax).
         rng:           np.random.Generator for the actuation errors.
         on_step:       optional callback(k, x, dv_cmd, info, t_ctrl).
+        on_transition: optional callback(k, x, dv_cmd, info, t_ctrl, execution,
+                       x_next), invoked after impulse and propagation.
 
     Returns a dict with the realised episode. Time series have n_steps rows,
     states and times n_steps + 1; on a collision or escape the last state and
@@ -172,6 +174,8 @@ def run_episode(policy, x0, asteroid_dict, optim_dict, rng,
 
         x_next, ex = simulate_step(x, cmd, asteroid_dict, optim_dict, rng,
                                    events, dv_off)
+        if on_transition is not None:
+            on_transition(k, x.copy(), cmd, info, t_ctrl, ex, x_next.copy())
         dv_cmd.append(cmd)
         dv_vnb.append(ex["dv_vnb"])
         dv_planet.append(ex["dv_planet"])
