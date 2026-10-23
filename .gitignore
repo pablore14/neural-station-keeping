@@ -15,6 +15,10 @@ runs/*
 *.pkl
 *.zip
 *.txt
+*.log
+*.pdf 
+*.pid
+*.csv
 
 paper/*.aux
 paper/*.log

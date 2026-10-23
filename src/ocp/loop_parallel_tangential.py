@@ -102,7 +102,7 @@ if __name__ == "__main__":
         data_dict = pickle.load(f)
 
     # Number of simulations
-    N_episodes = 2000
+    N_episodes = 500
 
     # Retrieve asteroid parameters
     asteroid_dict = data_dict['asteroid']
@@ -123,7 +123,7 @@ if __name__ == "__main__":
                              30 * km2m/r_ad),
                   'gam': 0.1}
     optim_dict = {'tf': 10 * h2sec,
-                  'N': 60,
+                  'N': 30,
                   'dvmax': 0.2*np.array([1, 0, 0]),
                   'rmin': 22 * km2m,   # añadir
                   'rmax': 30 * km2m,
@@ -148,5 +148,5 @@ if __name__ == "__main__":
                    'results_dict': results}
 
     # Save to pickle file
-    with open("results/direct_results_VNBTangential_v2.pkl", "wb") as f:
+    with open("data/direct_results_VNBTangential_20min.pkl", "wb") as f:
         pickle.dump(output_dict, f)
