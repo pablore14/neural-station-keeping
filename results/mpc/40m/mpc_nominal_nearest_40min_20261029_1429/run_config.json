@@ -1,0 +1,38 @@
+{
+  "args": {
+    "scenarios": "data/initial_conditions_500.pkl",
+    "ep_start": 0,
+    "n_episodes": 500,
+    "noise_seed": 123,
+    "model": "nominal",
+    "guess": "nearest",
+    "guess_library": "results/direct_results_VNBTangential_v2.pkl",
+    "library_max_fail": 0.0,
+    "ref_results": null,
+    "ref_mode": null,
+    "out_dir": "results/mpc/40m/mpc_nominal_nearest_40min_20261029_1429",
+    "out_root": "results/mpc",
+    "resume": false,
+    "no_plans": false,
+    "no_warmup": false,
+    "verbose_steps": 5
+  },
+  "argv": [
+    "/home/pabredama/neural-station-keeping/scripts/mpc.py",
+    "--scenarios",
+    "data/initial_conditions_500.pkl",
+    "--ep-start",
+    "0",
+    "--n-episodes",
+    "500",
+    "--model",
+    "nominal",
+    "--guess",
+    "nearest",
+    "--guess-library",
+    "results/direct_results_VNBTangential_v2.pkl",
+    "--out-dir",
+    "results/mpc/40m/mpc_nominal_nearest_40min_20261029_1429"
+  ],
+  "created": "2026-10-29T14:35:35.659077"
+}
