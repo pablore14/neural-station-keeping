@@ -25,6 +25,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR    = os.path.join(PROJECT_ROOT, "data")
 RESULTS_DIR_REG = os.path.join(PROJECT_ROOT, "results/regressor")
 RESULTS_DIR_RL = os.path.join(PROJECT_ROOT, "results/rl")
+SAC_DEFAULT_REGRESSOR = os.path.join(
+    RESULTS_DIR_REG, "regressor_20261026_204905", "best_model.pth"
+)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -110,6 +113,8 @@ DV_REWARD_SCALE = 10.0
 # --- Episode / optimization scenario ---
 TF_S            = 10 * 3600     # episode duration, s (10 h)
 N_STEPS         = 60            # control steps per episode
+RL_CONTROL_STEP_S = 30 * 60     # SAC action interval, s (30 min)
+RL_N_STEPS      = int(TF_S / RL_CONTROL_STEP_S)
 DVMAX_SAC       = 0.05          # SAC residual dv_max, m/s
 RMAX_M          = 50 * KM2M     # escape radius, m
 COLLISION_REWARD = -5.0         # terminal reward on collision/escape

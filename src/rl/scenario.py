@@ -14,7 +14,7 @@ from src.config import (
     MASCON_FRACTIONS,
     MASCON_MU_TOTAL,
     MASCON_POSITIONS_KM,
-    N_STEPS,
+    RL_N_STEPS,
     OUT_OF_SHELL_REWARD,
     RMAX_M,
     SHELL_GAMMA,
@@ -47,7 +47,7 @@ def build_optim_dict(asteroid_dict):
 
     return {
         "tf": TF_S,
-        "N": N_STEPS,
+        "N": RL_N_STEPS,
         "dvmax": DV_MAX_REG,
         "dvmax_SAC": DVMAX_SAC,
         "dvmax_MPC": DVMAX_MPC,

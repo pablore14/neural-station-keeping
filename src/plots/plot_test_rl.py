@@ -18,9 +18,17 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
-from src.config import ASTEROID_AXES_M, N_STEPS, RESULTS_DIR_RL, SHELL_MAX, SHELL_MIN, TF_S
+from src.config import (
+    ASTEROID_AXES_M,
+    RL_CONTROL_STEP_S,
+    RESULTS_DIR_RL,
+    SHELL_MAX,
+    SHELL_MIN,
+    TF_S,
+)
 from src.utils.plotting_utils import PALETTE, save_figure, set_paper_style
 
 
@@ -427,23 +435,78 @@ def _plot_trajectories(episodes, reference, paired_sac, paired_mpc, out_dir):
     _save(fig, out_dir, "18_topview_sac.png")
 
     if paired_sac and paired_mpc:
-        fig, axes = plt.subplots(1, 2, figsize=(13, 6), constrained_layout=True)
-        for ax, (label, rows) in zip(
-            axes, (("MPC", paired_mpc), ("SAC", paired_sac))
-        ):
-            ax.add_patch(plt.Circle((0, 0), SHELL_MAX / 1000.0,
-                                    color="0.85", zorder=0))
-            ax.add_patch(plt.Circle((0, 0), SHELL_MIN / 1000.0,
-                                    color="white", zorder=0))
-            for ep in rows[:MAX_TRAJECTORIES]:
-                trajectory = _array(ep, "trajectory")[:, :2] / 1000.0
-                color = OUTCOME_COLORS.get(ep.get("outcome"), PALETTE["grey"])
-                ax.plot(trajectory[:, 0], trajectory[:, 1],
-                        color=color, alpha=0.22, linewidth=0.7)
-            ax.set(xlim=(-40, 40), ylim=(-40, 40), xlabel="X [km]",
-                   ylabel="Y [km]", title="{} top view".format(label))
-            ax.set_aspect("equal", adjustable="box")
-        _save(fig, out_dir, "19_topview_mpc_vs_sac.png")
+        _plot_paired_topview(paired_mpc, paired_sac, out_dir)
+
+
+def _plot_paired_topview(mpc_episodes, sac_episodes, out_dir):
+    """Plot all paired episodes, emphasizing trajectories outside success."""
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7), constrained_layout=True)
+    for ax, (label, rows) in zip(
+        axes, (("MPC", mpc_episodes), ("SAC", sac_episodes))
+    ):
+        ax.add_patch(plt.Circle((0, 0), SHELL_MAX / 1000.0,
+                                color="0.85", zorder=0))
+        ax.add_patch(plt.Circle((0, 0), SHELL_MIN / 1000.0,
+                                color="white", zorder=0))
+        ax.add_patch(plt.Circle((0, 0), SHELL_MIN / 1000.0,
+                                fill=False, edgecolor="0.55",
+                                linewidth=0.8, zorder=1))
+        ax.add_patch(plt.Circle((0, 0), SHELL_MAX / 1000.0,
+                                fill=False, edgecolor="0.55",
+                                linewidth=0.8, zorder=1))
+
+        counts = {outcome: 0 for outcome in OUTCOMES}
+        outcome_order = {
+            "success": 0,
+            "partial": 1,
+            "escape": 2,
+            "collision": 3,
+        }
+        ordered_rows = sorted(
+            rows,
+            key=lambda episode: outcome_order.get(
+                episode.get("outcome"), len(outcome_order)
+            ),
+        )
+        outcome_alpha = {
+            "success": 0.14,
+            "partial": 0.45,
+            "escape": 0.14,
+            "collision": 0.85,
+        }
+        for episode in ordered_rows:
+            outcome = episode.get("outcome")
+            counts[outcome] = counts.get(outcome, 0) + 1
+            trajectory = _array(episode, "trajectory")[:, :2] / 1000.0
+            ax.plot(
+                trajectory[:, 0],
+                trajectory[:, 1],
+                color=OUTCOME_COLORS.get(outcome, PALETTE["grey"]),
+                alpha=outcome_alpha.get(outcome, 0.14),
+                linewidth=0.5,
+                zorder=2,
+            )
+
+        handles = [
+            Line2D(
+                [0], [0],
+                color=OUTCOME_COLORS[outcome],
+                linewidth=1.5,
+                label="{}: {}".format(outcome, counts.get(outcome, 0)),
+            )
+            for outcome in OUTCOMES
+            if counts.get(outcome, 0)
+        ]
+        ax.set(
+            xlim=(-40, 40),
+            ylim=(-40, 40),
+            xlabel="X [km]",
+            ylabel="Y [km]",
+            title="{} top view — {} trajectories".format(label, len(rows)),
+        )
+        ax.set_aspect("equal", adjustable="box")
+        ax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.9)
+    _save(fig, out_dir, "19_topview_mpc_vs_sac.png")
 
 
 def _plot_dv_components(episodes, out_dir):
@@ -489,7 +552,7 @@ def _plot_dv_components(episodes, out_dir):
         values = np.full((len(curves), width), np.nan)
         for i, curve in enumerate(curves):
             values[i, :len(curve)] = curve
-        step = np.arange(width) * TF_S / N_STEPS / 3600.0
+        step = np.arange(width) * RL_CONTROL_STEP_S / 3600.0
         valid = np.isfinite(values).any(axis=0)
         low, median, high = np.nanpercentile(values[:, valid],
                                               [10, 50, 90], axis=0)
@@ -657,6 +720,11 @@ def parse_args(argv=None):
         "--mpc-reference",
         help="MPC run_data.pkl to use instead of each test's configured reference",
     )
+    parser.add_argument(
+        "--only-paired-topview",
+        action="store_true",
+        help="regenerate only figure 19, the paired MPC/SAC top view",
+    )
     return parser.parse_args(argv)
 
 
@@ -675,7 +743,31 @@ def main(argv=None):
     for path in run_data_paths:
         try:
             print("[data] {}".format(path), flush=True)
-            plot_test_run(path, args.mpc_reference)
+            if args.only_paired_topview:
+                data = _load_pickle(path)
+                episodes = _episodes(data, path)
+                reference = _load_reference(data, args.mpc_reference)
+                if not reference:
+                    raise ValueError(
+                        "{} has no available MPC reference.".format(path)
+                    )
+                paired_sac, paired_mpc = _paired_episodes(episodes, reference)
+                if not paired_sac:
+                    raise ValueError(
+                        "{} has no episodes paired with its MPC reference."
+                        .format(path)
+                    )
+                _plot_paired_topview(
+                    paired_mpc, paired_sac, os.path.dirname(os.path.abspath(path))
+                )
+                print(
+                    "[done] figure 19; {} paired episodes saved in {}".format(
+                        len(paired_sac), os.path.dirname(os.path.abspath(path))
+                    ),
+                    flush=True,
+                )
+            else:
+                plot_test_run(path, args.mpc_reference)
         except (OSError, ValueError, KeyError, TypeError) as error:
             failures.append((path, error))
             print("[error] {}: {}: {}".format(

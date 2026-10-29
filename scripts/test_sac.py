@@ -25,7 +25,13 @@ import numpy as np
 import torch
 from stable_baselines3 import SAC
 
-from src.config import N_STEPS, RESULTS_DIR_RL, TF_S
+from src.config import (
+    RL_CONTROL_STEP_S,
+    RL_N_STEPS,
+    RESULTS_DIR_RL,
+    SAC_DEFAULT_REGRESSOR,
+    TF_S,
+)
 from src.regressor.data_preparation.state_scaling import adimensionalize_state
 from src.rl.scenario import build_scenario
 from src.utils.plotting_utils import PALETTE, save_figure, set_paper_style
@@ -35,7 +41,8 @@ from scripts.train_sac import load_base_policy
 
 DEFAULT_SCENARIOS = os.path.join("data", "initial_conditions_500.pkl")
 DEFAULT_MPC_RESULTS = os.path.join(
-    "results", "mpc", "mpc_nominal_nearest_20261005_203926", "run_data.pkl"
+    "results", "mpc", "30m", "mpc_nominal_nearest_20261025_194445",
+    "run_data.pkl"
 )
 NOISE_SEED_STRIDE = 1_000_000
 NOMINAL_MPC_SEED = 123
@@ -50,7 +57,8 @@ def parse_args(argv=None):
         "--agents",
         nargs="+",
         default=None,
-        help="SAC run directories (default: all trained runs under results/rl/).",
+        help=("SAC run directories (default: 30-minute runs using the "
+              "seed-3 regressor)."),
     )
     parser.add_argument("--scenarios", default=DEFAULT_SCENARIOS)
     parser.add_argument("--mpc-results", default=DEFAULT_MPC_RESULTS)
@@ -116,15 +124,27 @@ def _json_default(value):
 def discover_agents(agent_dirs):
     """Load each run's saved config and verify its model and shared regressor."""
     if agent_dirs is None:
-        agent_dirs = sorted(
-            path
-            for path in glob.glob(os.path.join(RESULTS_DIR_RL, "sac_*"))
-            if os.path.isdir(path)
-            and os.path.isfile(os.path.join(path, "config.json"))
-            and os.path.isfile(os.path.join(path, "summary.json"))
-        )
+        agent_dirs = []
+        for path in sorted(glob.glob(os.path.join(RESULTS_DIR_RL, "sac_*"))):
+            config_path = os.path.join(path, "config.json")
+            summary_path = os.path.join(path, "summary.json")
+            if not os.path.isdir(path) or not os.path.isfile(config_path):
+                continue
+            if not os.path.isfile(summary_path):
+                continue
+            with open(config_path, encoding="utf-8") as file:
+                config = json.load(file)
+            if (
+                config.get("control_step_s") == RL_CONTROL_STEP_S
+                and config.get("episode_steps") == RL_N_STEPS
+                and os.path.abspath(config.get("regressor_path", ""))
+                == os.path.abspath(SAC_DEFAULT_REGRESSOR)
+            ):
+                agent_dirs.append(path)
     if not agent_dirs:
-        raise FileNotFoundError("No trained SAC run directories were found.")
+        raise FileNotFoundError(
+            "No completed 30-minute SAC runs using the seed-3 regressor were found."
+        )
 
     agents = []
     for agent_dir in agent_dirs:
@@ -139,6 +159,15 @@ def discover_agents(agent_dirs):
             config = json.load(file)
         with open(summary_path, encoding="utf-8") as file:
             summary = json.load(file)
+
+        if (
+            config.get("control_step_s") != RL_CONTROL_STEP_S
+            or config.get("episode_steps") != RL_N_STEPS
+        ):
+            raise ValueError(
+                "{} is not configured for {}-second SAC actions over {} steps."
+                .format(agent_dir, RL_CONTROL_STEP_S, RL_N_STEPS)
+            )
 
         model_path = summary.get("model_path")
         if not model_path:
@@ -264,6 +293,16 @@ class SACRolloutPolicy:
 def make_episode_record(roll, ep_index, batch, noise_seed):
     """Convert a shared rollout into the episode schema used by MPC."""
     infos = roll["infos"]
+    action_times = np.asarray(roll["times"][:-1], dtype=np.float64)
+    expected_action_times = (
+        np.arange(roll["n_steps"], dtype=np.float64) * RL_CONTROL_STEP_S
+    )
+    if not np.allclose(action_times, expected_action_times, rtol=0.0, atol=1e-6):
+        raise ValueError(
+            "SAC actions must be applied every {} seconds.".format(
+                RL_CONTROL_STEP_S
+            )
+        )
     dv_base = np.asarray([info["dv_base_m_s"] for info in infos], dtype=np.float64)
     dv_res = np.asarray(
         [info["dv_residual_m_s"] for info in infos], dtype=np.float64
@@ -282,6 +321,7 @@ def make_episode_record(roll, ep_index, batch, noise_seed):
         "outcome": roll["outcome"],
         "terminated": roll["terminated"],
         "n_steps": roll["n_steps"],
+        "action_times_s": action_times,
         "times": roll["times"],
         "trajectory": trajectory,
         "dv_vnb": controls_vnb,
@@ -358,7 +398,7 @@ def compute_stats(episodes, mpc_episodes):
     }
 
 
-def _episode_matrix(episodes, n_steps=N_STEPS):
+def _episode_matrix(episodes, n_steps=RL_N_STEPS):
     values = np.full((len(episodes), n_steps + 1), np.nan, dtype=np.float64)
     for row, episode in enumerate(episodes):
         states = np.asarray(episode["trajectory"], dtype=np.float64)
@@ -417,7 +457,7 @@ def plot_test_results(episodes, mpc_episodes, out_dir):
 
     sac_radius = _episode_matrix(episodes)
     mpc_radius = _episode_matrix(mpc_episodes)
-    step_times = np.arange(sac_radius.shape[1]) * TF_S / N_STEPS / 3600.0
+    step_times = np.arange(sac_radius.shape[1]) * RL_CONTROL_STEP_S / 3600.0
     fig, ax = plt.subplots(figsize=(8.2, 4.8), constrained_layout=True)
     for radius, label, color in (
         (sac_radius, "SAC", PALETTE["blue"]),
@@ -460,6 +500,9 @@ def evaluate_agent(agent, base_policy, threshold, batch, batch_meta,
         "noise_seed": noise_seed,
         "noise_seed_stride": NOISE_SEED_STRIDE,
         "deterministic_policy": True,
+        "episode_duration_s": TF_S,
+        "episode_steps": RL_N_STEPS,
+        "control_step_s": RL_CONTROL_STEP_S,
     }
     if os.path.isfile(run_data_path):
         saved_data = _load_pickle(run_data_path)
@@ -492,6 +535,20 @@ def evaluate_agent(agent, base_policy, threshold, batch, batch_meta,
 
     model = SAC.load(agent["model_path"], device="cpu")
     nominal, optim_dict = build_scenario()
+    if (
+        optim_dict["tf"] != TF_S
+        or optim_dict["N"] != RL_N_STEPS
+        or not np.isclose(
+            optim_dict["tf"] / optim_dict["N"],
+            RL_CONTROL_STEP_S,
+            rtol=0.0,
+            atol=1e-9,
+        )
+    ):
+        raise ValueError(
+            "The SAC test scenario must use {}-second actions for {} steps."
+            .format(RL_CONTROL_STEP_S, RL_N_STEPS)
+        )
     episodes = []
     started = time.perf_counter()
     started_at = datetime.datetime.now().isoformat()
@@ -525,7 +582,7 @@ def evaluate_agent(agent, base_policy, threshold, batch, batch_meta,
     mpc_episodes = [mpc_by_index[index] for index in range(500)]
     stats = compute_stats(episodes, mpc_by_index)
     data = {
-        "schema_version": 1,
+        "schema_version": 2,
         "meta": {
             "script": "test_sac",
             "started": started_at,

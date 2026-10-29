@@ -32,9 +32,11 @@ from src.config import (
     DVMAX_SAC,
     MASCON_FRACTIONS,
     MASS_VARIATION,
-    N_STEPS,
     OUT_OF_SHELL_REWARD,
+    RL_CONTROL_STEP_S,
+    RL_N_STEPS,
     RESULTS_DIR_RL,
+    SAC_DEFAULT_REGRESSOR,
     SHELL_GAMMA,
     SHELL_MAX,
     SHELL_MIN,
@@ -53,8 +55,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train the residual SAC agent.")
     parser.add_argument(
         "--regressor",
-        required=True,
-        help="path to a trained base-regressor best_model.pth checkpoint",
+        default=SAC_DEFAULT_REGRESSOR,
+        help="base regressor checkpoint (default: 30-minute regressor seed 3)",
     )
     parser.add_argument("--seed", type=int, default=16)
     parser.add_argument("--max-episodes", type=int, default=2500)
@@ -179,7 +181,8 @@ def main():
         "policy": "MlpPolicy",
         "action_space": "normalized [-1, 1] residual delta-v",
         "episode_duration_s": TF_S,
-        "episode_steps": N_STEPS,
+        "episode_steps": RL_N_STEPS,
+        "control_step_s": RL_CONTROL_STEP_S,
         "residual_dv_max_m_s": DVMAX_SAC,
         "thruster_off_threshold_m_s": DV_OFF_THRESHOLD,
         "shell_bounds_m": [SHELL_MIN, SHELL_MAX],

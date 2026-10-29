@@ -1,0 +1,41 @@
+{
+  "git_commit": "7d31f03353e52fa892483ddcf3f25d9854b4eae6-dirty",
+  "seed": 8,
+  "regressor_path": "/home/pabredama/neural-station-keeping/results/regressor/regressor_20261026_204905/best_model.pth",
+  "classifier_threshold": 0.74,
+  "max_episodes": 15000,
+  "total_timesteps": 10000000,
+  "learning_rate": 0.0003,
+  "batch_size": 256,
+  "buffer_size": 1000000,
+  "learning_starts": 100,
+  "tau": 0.005,
+  "gamma": 0.99,
+  "policy": "MlpPolicy",
+  "action_space": "normalized [-1, 1] residual delta-v",
+  "episode_duration_s": 36000,
+  "episode_steps": 20,
+  "control_step_s": 1800,
+  "residual_dv_max_m_s": 0.05,
+  "thruster_off_threshold_m_s": 1e-08,
+  "shell_bounds_m": [
+    22000.0,
+    30000.0
+  ],
+  "shell_reward_scale": 0.1,
+  "delta_v_reward_scale": 10.0,
+  "out_of_shell_terminal_reward": -3.0,
+  "mass_fraction_1_nominal": 0.6,
+  "mass_fraction_1_range": [
+    0.44999999999999996,
+    0.75
+  ],
+  "mass_variation_relative": 0.25,
+  "initial_position_sampling": "uniform in volume within a sphere",
+  "initial_position_dispersion_m": 3000.0,
+  "reward_trace_path": "/home/pabredama/neural-station-keeping/results/rl/sac_8_20261027_013409/logs/training_steps.csv",
+  "model_path": "/home/pabredama/neural-station-keeping/results/rl/sac_8_20261027_013409/sac_model_final_seed8.zip",
+  "monitor_path": "/home/pabredama/neural-station-keeping/results/rl/sac_8_20261027_013409/logs/seed8.monitor.csv",
+  "training_metrics_path": "/home/pabredama/neural-station-keeping/results/rl/sac_8_20261027_013409/logs/progress.csv",
+  "checkpoint_dir": "/home/pabredama/neural-station-keeping/results/rl/sac_8_20261027_013409/checkpoints"
+}

@@ -1,0 +1,45 @@
+{
+  "config": {
+    "agent_run_dir": "/home/pabredama/neural-station-keeping/results/rl/sac_10_20261027_024351",
+    "agent_model_path": "/home/pabredama/neural-station-keeping/results/rl/sac_10_20261027_024351/sac_model_final_seed10.zip",
+    "regressor_path": "/home/pabredama/neural-station-keeping/results/regressor/regressor_20261026_204905/best_model.pth",
+    "classifier_threshold": 0.74,
+    "scenarios_path": "/home/pabredama/neural-station-keeping/data/initial_conditions_500.pkl",
+    "n_scenarios": 500,
+    "mpc_reference_path": "/home/pabredama/neural-station-keeping/results/mpc/30m/mpc_nominal_nearest_20261025_194445/run_data.pkl",
+    "noise_seed": 123,
+    "noise_seed_stride": 1000000,
+    "deterministic_policy": true,
+    "episode_duration_s": 36000,
+    "episode_steps": 20,
+    "control_step_s": 1800
+  },
+  "summary": {
+    "success": 485,
+    "partial": 13,
+    "collision": 0,
+    "escape": 2,
+    "n_episodes": 500,
+    "success_rate": 0.97,
+    "mean_dv_total": 0.7330854110379957,
+    "mean_dv_exec": 0.7357029177898317,
+    "mean_dv_base": 0.3014007856094868,
+    "mean_dv_res": 0.4629865208804607,
+    "mean_dv_success": 0.7126219594073802,
+    "mean_acts_total": 19.994,
+    "mean_acts_res": 19.994,
+    "mean_ctrl_time": 0.00036213093825602247,
+    "max_ctrl_time": 0.002193327061831951,
+    "total_steps": 9997,
+    "mpc_outcome_to_sac_outcome": {
+      "success->success": 314,
+      "partial->success": 169,
+      "partial->escape": 2,
+      "partial->partial": 12,
+      "success->partial": 1,
+      "collision->success": 2
+    },
+    "mpc_mean_dv_total": 0.32946550111684714,
+    "mpc_mean_dv_exec": 0.3349792069136626
+  }
+}

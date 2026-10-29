@@ -21,7 +21,15 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 import numpy as np
 
-from src.config import N_STEPS, PROJECT_ROOT, RESULTS_DIR_RL, SHELL_MAX, SHELL_MIN, TF_S
+from src.config import (
+    PROJECT_ROOT,
+    RESULTS_DIR_RL,
+    RL_CONTROL_STEP_S,
+    RL_N_STEPS,
+    SHELL_MAX,
+    SHELL_MIN,
+    TF_S,
+)
 from src.utils.plotting_utils import PALETTE, save_figure, set_paper_style
 
 
@@ -250,16 +258,17 @@ def _plot_final_radius_distribution(agents, out_dir):
 
 def _plot_radius_histories(agents, out_dir):
     histories = [
-        np.asarray([_radius_history(ep) for ep in agent["episodes"]])
+        [_radius_history(ep) for ep in agent["episodes"]]
         for agent in agents
     ]
-    max_steps = max(history.shape[1] for history in histories)
-    time_grid = np.arange(max_steps) * TF_S / N_STEPS / 3600.0
+    max_steps = max(len(curve) for history in histories for curve in history)
+    time_grid = np.arange(max_steps) * RL_CONTROL_STEP_S / 3600.0
 
     fig, ax = plt.subplots(figsize=(11, 6), constrained_layout=True)
     for history, agent in zip(histories, agents):
-        widths = np.full((history.shape[0], max_steps), np.nan)
-        widths[:, :history.shape[1]] = history
+        widths = np.full((len(history), max_steps), np.nan)
+        for row, curve in enumerate(history):
+            widths[row, :len(curve)] = curve
         valid = np.isfinite(widths).any(axis=0)
         lower, median, upper = np.nanpercentile(
             widths[:, valid], [10, 50, 90], axis=0
@@ -539,7 +548,7 @@ def _plot_actions(agents, out_dir):
                   ["Seed {}".format(agent["seed"]) for agent in agents])
     ax.set(ylabel="Active steps per episode",
            title="SAC activations per episode (mean +/- SD)",
-           ylim=(0, N_STEPS * 1.12))
+           ylim=(0, RL_N_STEPS * 1.12))
     for bar, mean in zip(bars, means):
         ax.text(bar.get_x() + bar.get_width() / 2, mean + 0.5,
                 "{:.1f}".format(mean), ha="center", va="bottom", fontsize=8)
@@ -587,7 +596,7 @@ def _plot_cumulative_delta_v(agents, out_dir):
         lower, median, upper = np.nanpercentile(
             matrix[:, valid], [10, 50, 90], axis=0
         )
-        time = np.arange(width)[valid] * TF_S / N_STEPS / 3600.0
+        time = np.arange(width)[valid] * RL_CONTROL_STEP_S / 3600.0
         color = SEED_COLORS[agent["seed"]]
         ax.fill_between(time, lower, upper, color=color, alpha=0.10)
         ax.plot(time, median, color=color,

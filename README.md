@@ -11,7 +11,7 @@ Train SAC with a previously trained base regressor:
 
 ```bash
 python -m scripts.train_sac \
-  --regressor results/regressor/<run>/best_model.pth \
+  --regressor results/regressor/regressor_20261026_204905/best_model.pth \
   --seed 16
 ```
 
@@ -25,6 +25,9 @@ and randomized mass fraction, and reward/loss plots.
 RL training uses the same mass distribution as the MPC initial-condition
 batch: the first mascon is nominally 60% of total mass with a relative
 variation of +/-25% (a 45%-75% fraction, uniformly sampled per episode).
+The 30-minute SAC experiment uses one control action every 1800 seconds, for
+20 actions per 10-hour episode. Its base policy is the 30-minute regressor
+trained with seed 3. SAC retains its existing discount factor of `0.99`.
 Impulse noise and pointing error are disabled for commands with magnitude at
 or below the shared `1e-8 m/s` thruster-off threshold, just as in MPC rollouts.
 During SAC training, crossing either shell boundary (22 km or 30 km) terminates
@@ -36,15 +39,17 @@ use a distinct seed for each run; for example, pass `--output-dir` with
 
 ## SAC evaluation on the shared MPC batch
 
-Evaluate every trained SAC run on the same 500 initial conditions and
-mass-perturbed asteroid scenarios used by the nominal MPC run:
+Evaluate the completed 30-minute SAC runs using the seed-3 regressor on the
+same 500 initial conditions and mass-perturbed asteroid scenarios as the
+30-minute MPC run:
 
 ```bash
 python -m scripts.test_sac
 ```
 
-The evaluation verifies that all discovered SAC agents use the same trained
-regressor and checks the batch against the MPC results. Each agent gets a
+The evaluation discovers only 30-minute SAC runs using the seed-3 regressor,
+verifies their control cadence and shared model, and checks the batch against
+the 30-minute MPC results. Each agent gets a
 `tests/` directory containing `run_data.pkl` (all 500 full episode records and
 the input scenario batch), `summary.json`, and PNG/PDF comparisons of outcomes,
 delta-v, and orbit-radius histories against MPC. The MPC-compatible per-episode
@@ -79,3 +84,12 @@ python -m src.plots.plots_SAC_agents
 This creates PNG/PDF comparisons of final-radius distributions (including the
 22 km and 30 km shell limits), radius histories, delta-v, outcomes, controller
 latency, evaluation runtime, and action activations, plus an `agent_summary.csv`.
+
+Compare the episode-reward histories from training for SAC seeds 1-10:
+
+```bash
+python -m src.plots.plot_sac_training
+```
+
+This saves `training_reward_all_agents.png` and `.pdf` in
+`results/plots_comparison_agents/`.
