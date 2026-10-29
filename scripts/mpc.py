@@ -20,6 +20,12 @@ seconds with src.propagators.integrate3D_scipy. Collision and escape are
 detected continuously with the integrator events; the episode ends there or
 at step N.
 
+The action interval is configured once as DT_STEP in src/config.py. The MPC
+horizon N is derived from the episode duration divided by DT_STEP; the config
+rejects intervals that do not divide the duration exactly. Simulation and
+planning also check that their step lengths agree. N_STEPS_NOM is unrelated:
+it normalizes the time feature expected by the trained base regressor.
+
 The actuation-error RNG of episode i is seeded with noise_seed*1e6 + i.
 
 ===========================================================================
@@ -886,8 +892,10 @@ def main(argv=None):
 
     dt_sim = control_dt(optim_dict)
     if not np.isclose(dt_sim, DT_STEP, rtol=1e-9, atol=0.0):
-        print(f"[warning] tf/N = {dt_sim} s differs from DT_STEP = {DT_STEP} s: "
-              f"the MPC and the simulation use different step lengths", flush=True)
+        raise ValueError(
+            f"configured MPC step DT_STEP={DT_STEP} s does not match the "
+            f"simulation step tf/N={dt_sim} s"
+        )
 
     nominal_check = check_nominal_mascon(nominal, scen_meta)
     if not nominal_check["ok"]:
@@ -914,7 +922,7 @@ def main(argv=None):
                   "ignoring it", flush=True)
             ref = None
 
-    mpc = MPCController(optim_dict, dt_step=DT_STEP, N=N,
+    mpc = MPCController(optim_dict, dt_step=dt_sim, N=N,
                      nominal_dict=nominal, model=args.model,
                      guess_mode=args.guess, lib_X0=lib_X0,
                      lib_entries=lib_entries, store_plans=not args.no_plans)
@@ -922,7 +930,7 @@ def main(argv=None):
     print(f"[ocp]   rmin={optim_dict.get('rmin')} rmax={optim_dict.get('rmax')} "
           f"shell={optim_dict['shell']['bounds']}", flush=True)
     print(f"[ocp]   ellip_axes={optim_dict['ellip_axes']}  dvmax={DVMAX_MPC}  "
-          f"N={N}  dt={DT_STEP}", flush=True)
+          f"N={N}  dt={dt_sim}", flush=True)
     print(f"[sim]   sigma_dv={SIGMA_DV_ABS} m/s  sigma_theta={SIGMA_THETA} rad  "
           f"thruster off below {DV_OFF_THRESHOLD} m/s", flush=True)
     print(f"[model] {args.model}  |  nominal muM = {nominal['mascon']['muM']}", flush=True)

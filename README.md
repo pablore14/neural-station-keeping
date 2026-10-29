@@ -5,6 +5,13 @@ Universidad de Sevilla.
 
 Work in progress.
 
+The MPC applies one action every 40 minutes (15 control steps per 10-hour
+episode). To use another cadence, change `DT_STEP` in `src/config.py`; the MPC
+step count is derived from the episode duration, and incompatible intervals
+that do not divide it exactly are rejected. The separate `N_STEPS_NOM` value
+only normalizes the time feature expected by the trained base regressor. SAC
+retains its independent 30-minute action interval.
+
 ## Residual SAC training
 
 Train SAC with a previously trained base regressor:
@@ -41,7 +48,7 @@ use a distinct seed for each run; for example, pass `--output-dir` with
 
 Evaluate the completed 30-minute SAC runs using the seed-3 regressor on the
 same 500 initial conditions and mass-perturbed asteroid scenarios as the
-30-minute MPC run:
+archived 30-minute MPC reference:
 
 ```bash
 python -m scripts.test_sac
@@ -49,7 +56,7 @@ python -m scripts.test_sac
 
 The evaluation discovers only 30-minute SAC runs using the seed-3 regressor,
 verifies their control cadence and shared model, and checks the batch against
-the 30-minute MPC results. Each agent gets a
+the archived 30-minute MPC results. Each agent gets a
 `tests/` directory containing `run_data.pkl` (all 500 full episode records and
 the input scenario batch), `summary.json`, and PNG/PDF comparisons of outcomes,
 delta-v, and orbit-radius histories against MPC. The MPC-compatible per-episode

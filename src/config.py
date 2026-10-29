@@ -72,8 +72,25 @@ DISPERSION_M = 3.0 * KM2M                            # 1-sigma dispersion, m
 # SIMULATION TIME PARAMETERS
 # ══════════════════════════════════════════════════════════════════════════
 T_FINAL     = 36_000.0    # episode duration, s
-DT_STEP     = 600.0       # control step, s
-N_STEPS_NOM = 60          # nominal number of steps per episode
+DT_STEP     = 40 * 60     # MPC action/planning interval, s; change to alter cadence
+# Fixed time-feature scale used to train the base regressor; not the MPC horizon.
+N_STEPS_NOM = 60
+
+
+def _steps_per_episode(episode_duration_s, action_interval_s, controller):
+    """Return an exact integer horizon, rejecting incompatible cadences."""
+    if action_interval_s <= 0:
+        raise ValueError(f"{controller} action interval must be positive")
+
+    n_steps = round(episode_duration_s / action_interval_s)
+    if n_steps < 1 or not np.isclose(
+        n_steps * action_interval_s, episode_duration_s, rtol=0.0, atol=1e-9
+    ):
+        raise ValueError(
+            f"{controller} action interval ({action_interval_s} s) must divide "
+            f"the episode duration ({episode_duration_s} s) exactly"
+        )
+    return int(n_steps)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -111,10 +128,10 @@ SHELL_GAMMA    = 0.1
 DV_REWARD_SCALE = 10.0
  
 # --- Episode / optimization scenario ---
-TF_S            = 10 * 3600     # episode duration, s (10 h)
-N_STEPS         = 60            # control steps per episode
+TF_S            = T_FINAL       # one source of truth for episode duration, s
+N_STEPS         = _steps_per_episode(TF_S, DT_STEP, "MPC")
 RL_CONTROL_STEP_S = 30 * 60     # SAC action interval, s (30 min)
-RL_N_STEPS      = int(TF_S / RL_CONTROL_STEP_S)
+RL_N_STEPS      = _steps_per_episode(TF_S, RL_CONTROL_STEP_S, "SAC")
 DVMAX_SAC       = 0.05          # SAC residual dv_max, m/s
 RMAX_M          = 50 * KM2M     # escape radius, m
 COLLISION_REWARD = -5.0         # terminal reward on collision/escape
